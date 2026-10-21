@@ -2,80 +2,104 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-<c:set var="pageTitle" value="My Orders" scope="request" />
-<jsp:include page="/fragments/header.jsp" />
-<jsp:include page="/fragments/navbar.jsp" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management | ShopSphere Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+</head>
+<body class="bg-light">
 
-<main class="container py-4 flex-grow-1">
-    <div class="mb-4 pb-2 border-bottom">
-        <h2 class="fw-bold mb-1">Order History</h2>
-        <p class="text-muted small mb-0">Track shipments, download receipts, and review past purchases</p>
-    </div>
+<div class="container-fluid">
+    <div class="row">
+        <jsp:include page="/fragments/sidebar.jsp">
+            <jsp:param name="active" value="orders" />
+        </jsp:include>
 
-    <c:choose>
-        <c:when test="${not empty orders}">
-            <div class="d-flex flex-column gap-3">
-                <c:forEach var="ord" items="${orders}">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                        <div class="row align-items-center g-3">
-                            <div class="col-md-3">
-                                <span class="text-muted small d-block">Order Reference</span>
-                                <span class="fw-bold fs-6 text-dark">#${ord.orderId}</span>
-                                <span class="text-secondary small d-block">
-                                    <fmt:formatDate value="${ord.createdAt}" pattern="dd MMM yyyy" />
-                                </span>
-                            </div>
-
-                            <div class="col-md-3">
-                                <span class="text-muted small d-block">Items Ordered</span>
-                                <span class="fw-semibold text-dark">${ord.items.size()} item(s)</span>
-                                <span class="text-muted small d-block">Method: ${ord.paymentMethod}</span>
-                            </div>
-
-                            <div class="col-md-3">
-                                <span class="text-muted small d-block">Total Amount</span>
-                                <span class="fw-bold fs-5 text-primary">₹${ord.finalPayable}</span>
-                                <div class="mt-1">
-                                    <c:choose>
-                                        <c:when test="${ord.orderStatus == 'DELIVERED'}">
-                                            <span class="badge bg-success rounded-pill px-2 py-1">Delivered</span>
-                                        </c:when>
-                                        <c:when test="${ord.orderStatus == 'SHIPPED'}">
-                                            <span class="badge bg-primary rounded-pill px-2 py-1">Shipped</span>
-                                        </c:when>
-                                        <c:when test="${ord.orderStatus == 'CANCELLED'}">
-                                            <span class="badge bg-danger rounded-pill px-2 py-1">Cancelled</span>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1">Confirmed</span>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3 text-md-end">
-                                <a href="${pageContext.request.contextPath}/order-details?id=${ord.orderId}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 fw-semibold">
-                                    View Details <i class="bi bi-chevron-right ms-1"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </c:forEach>
-            </div>
-        </c:when>
-        <c:otherwise>
-            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
-                <div class="fs-1 text-muted mb-3"><i class="bi bi-box2"></i></div>
-                <h4 class="fw-bold mb-2">No Past Orders Found</h4>
-                <p class="text-muted mb-4">You have not placed any orders on ShopSphere yet.</p>
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-4 border-bottom">
                 <div>
-                    <a href="${pageContext.request.contextPath}/products" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
-                        Explore Catalog
-                    </a>
+                    <h1 class="h3 fw-bold mb-0">Customer Orders</h1>
+                    <small class="text-muted">Fulfill shipments, update dispatch status, and manage payments</small>
                 </div>
             </div>
-        </c:otherwise>
-    </c:choose>
-</main>
 
-<jsp:include page="/fragments/footer.jsp" />
+            <c:if test="${not empty sessionScope.toastSuccess}">
+                <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+                    <i class="bi bi-check-circle-fill me-1"></i> ${sessionScope.toastSuccess}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+                </div>
+                <c:remove var="toastSuccess" scope="session" />
+            </c:if>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Delivery City</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Order Status</th>
+                                <th class="text-end pe-4">Update Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="ord" items="${orders}">
+                                <tr>
+                                    <td class="fw-bold">#${ord.orderId}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">${ord.customerName}</div>
+                                        <span class="text-muted small">${ord.customerEmail}</span>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty ord.shippingAddress}">
+                                                <span class="small">${ord.shippingAddress.city}, ${ord.shippingAddress.state}</span>
+                                            </c:when>
+                                            <c:otherwise><span class="text-muted small">Standard Dispatch</span></c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="fw-bold text-primary">₹${ord.finalPayable}</td>
+                                    <td>
+                                        <span class="badge ${ord.paymentStatus == 'PAID' ? 'bg-success' : 'bg-warning text-dark'} rounded-pill">
+                                            ${ord.paymentMethod} : ${ord.paymentStatus}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${ord.orderStatus == 'DELIVERED' ? 'bg-success' : (ord.orderStatus == 'CANCELLED' ? 'bg-danger' : 'bg-primary')} rounded-pill">
+                                            ${ord.orderStatus}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <form action="${pageContext.request.contextPath}/admin/orders" method="post" class="d-inline-flex gap-1 align-items-center">
+                                            <input type="hidden" name="action" value="updateOrderStatus">
+                                            <input type="hidden" name="orderId" value="${ord.orderId}">
+                                            <select name="orderStatus" class="form-select form-select-sm rounded-pill" style="width: 130px;" onchange="this.form.submit()">
+                                                <option value="CONFIRMED" ${ord.orderStatus == 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
+                                                <option value="SHIPPED" ${ord.orderStatus == 'SHIPPED' ? 'selected' : ''}>Shipped</option>
+                                                <option value="DELIVERED" ${ord.orderStatus == 'DELIVERED' ? 'selected' : ''}>Delivered</option>
+                                                <option value="CANCELLED" ${ord.orderStatus == 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
